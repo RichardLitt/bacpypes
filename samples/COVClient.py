@@ -53,6 +53,10 @@ class SubscribeCOVApplication(BIPSimpleApplication):
         print("{} changed\n".format(apdu.monitoredObjectIdentifier))
         for element in apdu.listOfValues:
             element_value = element.value.tagList
+            if _debug:
+                SubscribeCOVApplication._debug("    - propertyIdentifier: %r", element.propertyIdentifier)
+                SubscribeCOVApplication._debug("    - value tag list: %r", element_value)
+
             if len(element_value) == 1:
                 element_value[0].app_to_object().value
 
