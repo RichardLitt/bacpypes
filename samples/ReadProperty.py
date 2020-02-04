@@ -111,9 +111,9 @@ class ReadPropertyConsoleCmd(ConsoleCmd):
                     value.debug_contents(file=sys.stdout)
                 elif isinstance(value, list) and len(value) > 0:
                     for i, element in enumerate(value):
-                        sys.stdout.write("    [%d] %s\n".format(i, element))
+                        sys.stdout.write("    [{}] {}\n".format(i, element))
                         if hasattr(element, "debug_contents"):
-                            element.debug_contents(file=sys.stdout, indent=1)
+                            element.debug_contents(file=sys.stdout, indent=2)
                 sys.stdout.flush()
 
             # do something with nothing?
