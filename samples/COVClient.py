@@ -58,9 +58,9 @@ class SubscribeCOVApplication(BIPSimpleApplication):
                 SubscribeCOVApplication._debug("    - value tag list: %r", element_value)
 
             if len(element_value) == 1:
-                element_value[0].app_to_object().value
+                element_value = element_value[0].app_to_object().value
 
-            print("    {} is {}".format(element.propertyIdentifier, str(element.value)))
+            print("    {} is {}".format(element.propertyIdentifier, str(element_value)))
 
         if rsvp[0]:
             # success
@@ -93,9 +93,9 @@ class SubscribeCOVApplication(BIPSimpleApplication):
         for element in apdu.listOfValues:
             element_value = element.value.tagList
             if len(element_value) == 1:
-                element_value[0].app_to_object().value
+                element_value = element_value[0].app_to_object().value
 
-            print("    {} is {}".format(element.propertyIdentifier, str(element.value)))
+            print("    {} is {}".format(element.propertyIdentifier, str(element_value)))
 
 
 #
