@@ -20,6 +20,7 @@ source_folder = {
     (3, 5): 'py34',
     (3, 6): 'py34',
     (3, 7): 'py34',
+    (3, 8): 'py34',
     }.get(version_info, None)
 if not source_folder:
     raise EnvironmentError("unsupported version of Python")
@@ -79,6 +80,8 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
 
     setup_requires=setup_requirements,
