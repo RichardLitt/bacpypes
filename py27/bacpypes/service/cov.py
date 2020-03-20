@@ -523,7 +523,7 @@ class ActiveCOVSubscriptions(Property):
         if _debug: ActiveCOVSubscriptions._debug("    - current_time: %r", current_time)
 
         # start with an empty list
-        cov_subscriptions = []
+        cov_subscriptions = ListOf(COVSubscription)()
 
         # loop through the subscriptions
         for cov in obj._app.subscriptions():

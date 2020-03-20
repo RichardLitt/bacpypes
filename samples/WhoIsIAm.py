@@ -12,7 +12,7 @@ from bacpypes.debugging import bacpypes_debugging, ModuleLogger
 from bacpypes.consolelogging import ConfigArgumentParser
 from bacpypes.consolecmd import ConsoleCmd
 
-from bacpypes.core import run, deferred, enable_sleeping
+from bacpypes.core import run, enable_sleeping
 from bacpypes.iocb import IOCB
 
 from bacpypes.pdu import Address, GlobalBroadcast
@@ -44,14 +44,14 @@ class WhoIsIAmApplication(BIPSimpleApplication):
         # keep track of requests to line up responses
         self._request = None
 
-    def request(self, apdu):
-        if _debug: WhoIsIAmApplication._debug("request %r", apdu)
+    def process_io(self, iocb):
+        if _debug: WhoIsIAmApplication._debug("process_io %r", iocb)
 
         # save a copy of the request
-        self._request = apdu
+        self._request = iocb.args[0]
 
         # forward it along
-        BIPSimpleApplication.request(self, apdu)
+        BIPSimpleApplication.process_io(self, iocb)
 
     def confirmation(self, apdu):
         if _debug: WhoIsIAmApplication._debug("confirmation %r", apdu)

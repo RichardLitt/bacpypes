@@ -144,7 +144,6 @@ class ReadPropertyConsoleCmd(ConsoleCmd):
 
 def main():
     global this_application
-    ConsoleLogHandler("bacpypes.consolelogging")
 
     # parse the command line arguments
     args = ConfigArgumentParser(description=__doc__).parse_args()
