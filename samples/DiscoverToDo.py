@@ -648,16 +648,20 @@ class ReadPropertyToDo(ToDoItem):
                 else:
                     datatype = datatype.subtype
                 if _debug: ReadPropertyToDo._debug("    - datatype: %r", datatype)
-            
-            value = apdu.propertyValue.cast_out(datatype)
-            if _debug: ReadPropertyToDo._debug("    - value: %r", value)
 
-            # convert the value to a string
-            if hasattr(value, 'dict_contents'):
-                dict_contents = value.dict_contents(as_class=OrderedDict)
-                str_value = json.dumps(dict_contents)
-            else:
-                str_value = str(value)
+            try:
+                value = apdu.propertyValue.cast_out(datatype)
+                if _debug: ReadPropertyToDo._debug("    - value: %r", value)
+
+                # convert the value to a string
+                if hasattr(value, 'dict_contents'):
+                    dict_contents = value.dict_contents(as_class=OrderedDict)
+                    str_value = json.dumps(dict_contents)
+                else:
+                    str_value = str(value)
+            except Exception as err:
+                str_value = "!" + str(err)
+
             if interactive:
                 print(str_value)
 
@@ -845,15 +849,18 @@ class ReadPropertyMultipleToDo(ToDoItem):
                                     datatype = datatype.subtype
                                 if _debug: ReadPropertyMultipleToDo._debug("    - datatype: %r", datatype)
 
-                            value = propertyValue.cast_out(datatype)
-                            if _debug: ReadPropertyMultipleToDo._debug("    - value: %r", value)
+                            try:
+                                value = propertyValue.cast_out(datatype)
+                                if _debug: ReadPropertyMultipleToDo._debug("    - value: %r", value)
 
-                            # convert the value to a string
-                            if hasattr(value, 'dict_contents'):
-                                dict_contents = value.dict_contents(as_class=OrderedDict)
-                                str_value = json.dumps(dict_contents)
-                            else:
-                                str_value = str(value)
+                                # convert the value to a string
+                                if hasattr(value, 'dict_contents'):
+                                    dict_contents = value.dict_contents(as_class=OrderedDict)
+                                    str_value = json.dumps(dict_contents)
+                                else:
+                                    str_value = str(value)
+                            except Exception as err:
+                                str_value = "!" + str(err)
 
                         if interactive:
                             print("{}: {}".format(propertyIdentifier, str_value))
@@ -960,11 +967,12 @@ class ReadObjectPropertyList(ReadPropertyToDo):
         if _debug: ReadObjectPropertyList._debug("    - object_class: %r", object_class)
 
         # get a list of properties, including optional ones
-        object_properties = object_class._properties.keys()
+        object_properties = list(object_class._properties.keys())
         if _debug: ReadObjectPropertyList._debug("    - object_properties: %r", object_properties)
 
         # dont bother reading the property list, it already failed
-        object_properties.remove('propertyList')
+        if 'propertyList' in object_properties:
+            object_properties.remove('propertyList')
 
         # try to read all the properties
         for propid in object_properties:
@@ -1317,15 +1325,18 @@ class DiscoverConsoleCmd(ConsoleCmd):
                                         datatype = datatype.subtype
                                     if _debug: DiscoverConsoleCmd._debug("    - datatype: %r", datatype)
 
-                                value = propertyValue.cast_out(datatype)
-                                if _debug: DiscoverConsoleCmd._debug("    - value: %r", value)
+                                try:
+                                    value = propertyValue.cast_out(datatype)
+                                    if _debug: DiscoverConsoleCmd._debug("    - value: %r", value)
 
-                                # convert the value to a string
-                                if hasattr(value, 'dict_contents'):
-                                    dict_contents = value.dict_contents(as_class=OrderedDict)
-                                    str_value = json.dumps(dict_contents)
-                                else:
-                                    str_value = str(value)
+                                    # convert the value to a string
+                                    if hasattr(value, 'dict_contents'):
+                                        dict_contents = value.dict_contents(as_class=OrderedDict)
+                                        str_value = json.dumps(dict_contents)
+                                    else:
+                                        str_value = str(value)
+                                except Exception as err:
+                                    str_value = "!" + str(err)
 
                             if interactive:
                                 print("{}: {}".format(property_label, str_value))
