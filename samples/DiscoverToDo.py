@@ -27,21 +27,11 @@ from bacpypes.iocb import IOCB, IOQController
 # application layer
 from bacpypes.primitivedata import Unsigned, ObjectIdentifier
 from bacpypes.constructeddata import Array, ArrayOf
-from bacpypes.basetypes import (
-    PropertyIdentifier,
-    ServicesSupported,
-    )
-from bacpypes.object import (
-    get_object_class,
-    get_datatype,
-    DeviceObject,
-    )
+from bacpypes.basetypes import PropertyIdentifier, ServicesSupported
+from bacpypes.object import get_object_class, get_datatype, DeviceObject
 
 from bacpypes.app import ApplicationIOController
-from bacpypes.appservice import (
-    StateMachineAccessPoint,
-    ApplicationServiceAccessPoint,
-    )
+from bacpypes.appservice import StateMachineAccessPoint, ApplicationServiceAccessPoint
 from bacpypes.apdu import (
     WhoIsRequest,
     IAmRequest,
@@ -51,13 +41,10 @@ from bacpypes.apdu import (
     PropertyReference,
     ReadAccessSpecification,
     ReadPropertyMultipleACK,
-    )
+)
 
 # network layer
-from bacpypes.netservice import (
-    NetworkServiceAccessPoint,
-    NetworkServiceElement,
-    )
+from bacpypes.netservice import NetworkServiceAccessPoint, NetworkServiceElement
 from bacpypes.npdu import (
     WhoIsRouterToNetwork,
     IAmRouterToNetwork,
@@ -65,7 +52,7 @@ from bacpypes.npdu import (
     InitializeRoutingTableAck,
     WhatIsNetworkNumber,
     NetworkNumberIs,
-    )
+)
 
 # IPv4 virtual link layer
 from bacpypes.bvllservice import BIPSimple, AnnexJCodec, UDPMultiplexer
@@ -102,17 +89,19 @@ application_to_do_list = None
 #   Snapshot
 #
 
+
 @bacpypes_debugging
 class Snapshot:
-
     def __init__(self):
-        if _debug: Snapshot._debug("__init__")
+        if _debug:
+            Snapshot._debug("__init__")
 
         # empty database
         self.data = {}
 
     def read_file(self, filename):
-        if _debug: Snapshot._debug("read_file %r", filename)
+        if _debug:
+            Snapshot._debug("read_file %r", filename)
 
         # empty database
         self.data = {}
@@ -121,7 +110,7 @@ class Snapshot:
             with open(filename) as infile:
                 lines = infile.readlines()
                 for line in lines:
-                    devid, objid, propid, version, value = line[:-1].split('\t')
+                    devid, objid, propid, version, value = line[:-1].split("\t")
 
                     devid = int(devid)
                     version = int(version)
@@ -129,34 +118,40 @@ class Snapshot:
                     key = (devid, objid, propid)
                     self.data[key] = (version, value)
         except IOError:
-            if _debug: Snapshot._debug("    - file not found")
+            if _debug:
+                Snapshot._debug("    - file not found")
             pass
 
     def write_file(self, filename):
-        if _debug: Snapshot._debug("write_file %r", filename)
+        if _debug:
+            Snapshot._debug("write_file %r", filename)
 
         data = list(k + v for k, v in self.data.items())
         data.sort()
 
-        with open(filename, 'w') as outfile:
+        with open(filename, "w") as outfile:
             for row in data:
-                outfile.write('\t'.join(str(x) for x in row) + '\n')
+                outfile.write("\t".join(str(x) for x in row) + "\n")
 
     def upsert(self, devid, objid, propid, value):
-        if _debug: Snapshot._debug("upsert %r %r %r %r", devid, objid, propid, value)
+        if _debug:
+            Snapshot._debug("upsert %r %r %r %r", devid, objid, propid, value)
 
         key = (devid, objid, propid)
         if key not in self.data:
-            if _debug: Snapshot._debug("    - new key")
+            if _debug:
+                Snapshot._debug("    - new key")
             self.data[key] = (1, value)
         else:
             version, old_value = self.data[key]
             if value != old_value:
-                if _debug: Snapshot._debug("    - new value")
-                self.data[key] = (version+1, value)
+                if _debug:
+                    Snapshot._debug("    - new value")
+                self.data[key] = (version + 1, value)
 
     def get_value(self, devid, objid, propid):
-        if _debug: Snapshot._debug("get_value %r %r %r", devid, objid, propid)
+        if _debug:
+            Snapshot._debug("get_value %r %r %r", devid, objid, propid)
 
         key = (devid, objid, propid)
         if key not in self.data:
@@ -164,15 +159,17 @@ class Snapshot:
         else:
             return self.data[key][1]
 
+
 #
 #   ToDoItem
 #
 
+
 @bacpypes_debugging
 class ToDoItem:
-
     def __init__(self, _thread=None, _delay=None):
-        if _debug: ToDoItem._debug("__init__")
+        if _debug:
+            ToDoItem._debug("__init__")
 
         # basic status information
         self._completed = False
@@ -182,22 +179,26 @@ class ToDoItem:
         self._delay = _delay
 
     def prepare(self):
-        if _debug: ToDoItem._debug("prepare")
+        if _debug:
+            ToDoItem._debug("prepare")
         raise NotImplementedError
 
     def complete(self, iocb):
-        if _debug: ToDoItem._debug("complete %r", iocb)
+        if _debug:
+            ToDoItem._debug("complete %r", iocb)
         self._completed = True
+
 
 #
 #   ToDoList
 #
 
+
 @bacpypes_debugging
 class ToDoList:
-
     def __init__(self, controller, active_limit=1):
-        if _debug: ToDoList._debug("__init__")
+        if _debug:
+            ToDoList._debug("__init__")
 
         # save a reference to the controller for workers
         self.controller = controller
@@ -213,20 +214,23 @@ class ToDoList:
         self.launch_deferred = False
 
     def append(self, item):
-        if _debug: ToDoList._debug("append %r", item)
+        if _debug:
+            ToDoList._debug("append %r", item)
 
         # add the item to the list of pending items
         self.pending.append(item)
 
         # if an item can be started, schedule to launch it
         if len(self.active) < self.active_limit and not self.launch_deferred:
-            if _debug: ToDoList._debug("    - will launch")
+            if _debug:
+                ToDoList._debug("    - will launch")
 
             self.launch_deferred = True
             deferred(self.launch)
 
     def launch(self):
-        if _debug: ToDoList._debug("launch")
+        if _debug:
+            ToDoList._debug("launch")
 
         # find some workers and launch them
         while self.pending and (len(self.active) < self.active_limit):
@@ -237,9 +241,11 @@ class ToDoList:
                 if item._thread._completed:
                     break
             else:
-                if _debug: ToDoList._debug("    - waiting")
+                if _debug:
+                    ToDoList._debug("    - waiting")
                 break
-            if _debug: ToDoList._debug("    - item: %r", item)
+            if _debug:
+                ToDoList._debug("    - item: %r", item)
 
             # remove it from the pending list, add it to active
             del self.pending[i]
@@ -247,7 +253,8 @@ class ToDoList:
 
             # prepare it and capture the IOCB
             iocb = item.prepare()
-            if _debug: ToDoList._debug("    - iocb: %r", iocb)
+            if _debug:
+                ToDoList._debug("    - iocb: %r", iocb)
 
             # break the reference to the completed to_do_item
             item._thread = None
@@ -261,29 +268,34 @@ class ToDoList:
 
         # clear the deferred flag
         self.launch_deferred = False
-        if _debug: ToDoList._debug("    - done launching")
+        if _debug:
+            ToDoList._debug("    - done launching")
 
         # check for idle
         if (not self.active) and (not self.pending):
             self.idle()
 
     def complete(self, iocb):
-        if _debug: ToDoList._debug("complete %r", iocb)
+        if _debug:
+            ToDoList._debug("complete %r", iocb)
 
         # extract the to_do_item
         item = iocb._to_do_item
-        if _debug: ToDoList._debug("    - item: %r", item)
+        if _debug:
+            ToDoList._debug("    - item: %r", item)
 
         # if the item has a delay, schedule to call it later
         if item._delay:
             task = FunctionTask(self._delay_complete, item, iocb)
             task.install_task(delta=item._delay)
-            if _debug: ToDoList._debug("    - task: %r", task)
+            if _debug:
+                ToDoList._debug("    - task: %r", task)
         else:
             self._delay_complete(item, iocb)
 
     def _delay_complete(self, item, iocb):
-        if _debug: ToDoList._debug("_delay_complete %r %r", item, iocb)
+        if _debug:
+            ToDoList._debug("_delay_complete %r %r", item, iocb)
 
         # tell the item it completed, remove it from active
         item.complete(iocb)
@@ -291,41 +303,48 @@ class ToDoList:
 
         # find another to_do_item
         if not self.launch_deferred:
-            if _debug: ToDoList._debug("    - will launch")
+            if _debug:
+                ToDoList._debug("    - will launch")
 
             self.launch_deferred = True
             deferred(self.launch)
 
     def idle(self):
-        if _debug: ToDoList._debug("idle")
+        if _debug:
+            ToDoList._debug("idle")
+
 
 #
 #   DiscoverNetworkServiceElement
 #
 
+
 @bacpypes_debugging
 class DiscoverNetworkServiceElement(NetworkServiceElement, IOQController):
-
     def __init__(self):
-        if _debug: DiscoverNetworkServiceElement._debug("__init__")
+        if _debug:
+            DiscoverNetworkServiceElement._debug("__init__")
         NetworkServiceElement.__init__(self)
         IOQController.__init__(self)
 
     def process_io(self, iocb):
-        if _debug: DiscoverNetworkServiceElement._debug("process_io %r", iocb)
+        if _debug:
+            DiscoverNetworkServiceElement._debug("process_io %r", iocb)
 
         # this request is active
         self.active_io(iocb)
 
         # reference the service access point
         sap = self.elementService
-        if _debug: NetworkServiceElement._debug("    - sap: %r", sap)
+        if _debug:
+            NetworkServiceElement._debug("    - sap: %r", sap)
 
         # the iocb contains an NPDU, pass it along to the local adapter
         self.request(sap.local_adapter, iocb.args[0])
 
     def indication(self, adapter, npdu):
-        if _debug: DiscoverNetworkServiceElement._debug("indication %r %r", adapter, npdu)
+        if _debug:
+            DiscoverNetworkServiceElement._debug("indication %r %r", adapter, npdu)
         global network_path_to_do_list
 
         if not self.active_iocb:
@@ -345,7 +364,9 @@ class DiscoverNetworkServiceElement(NetworkServiceElement, IOQController):
             if interactive:
                 print("{} routing table".format(npdu.pduSource))
                 for rte in npdu.irtaTable:
-                    print("    {} {} {}".format(rte.rtDNET, rte.rtPortID, rte.rtPortInfo))
+                    print(
+                        "    {} {} {}".format(rte.rtDNET, rte.rtPortID, rte.rtPortInfo)
+                    )
 
             # reference the request
             request = self.active_iocb.args[0]
@@ -365,16 +386,28 @@ class DiscoverNetworkServiceElement(NetworkServiceElement, IOQController):
         # forward it along
         NetworkServiceElement.indication(self, adapter, npdu)
 
+
 #
 #   DiscoverApplication
 #
 
-@bacpypes_debugging
-class DiscoverApplication(ApplicationIOController, WhoIsIAmServices, ReadWritePropertyServices):
 
+@bacpypes_debugging
+class DiscoverApplication(
+    ApplicationIOController, WhoIsIAmServices, ReadWritePropertyServices
+):
     def __init__(self, localDevice, localAddress, deviceInfoCache=None, aseID=None):
-        if _debug: DiscoverApplication._debug("__init__ %r %r deviceInfoCache=%r aseID=%r", localDevice, localAddress, deviceInfoCache, aseID)
-        ApplicationIOController.__init__(self, localDevice, localAddress, deviceInfoCache, aseID=aseID)
+        if _debug:
+            DiscoverApplication._debug(
+                "__init__ %r %r deviceInfoCache=%r aseID=%r",
+                localDevice,
+                localAddress,
+                deviceInfoCache,
+                aseID,
+            )
+        ApplicationIOController.__init__(
+            self, localDevice, localAddress, deviceInfoCache, aseID=aseID
+        )
 
         # local address might be useful for subclasses
         if isinstance(localAddress, Address):
@@ -416,27 +449,31 @@ class DiscoverApplication(ApplicationIOController, WhoIsIAmServices, ReadWritePr
         self.nsap.bind(self.bip, address=self.localAddress)
 
     def close_socket(self):
-        if _debug: DiscoverApplication._debug("close_socket")
+        if _debug:
+            DiscoverApplication._debug("close_socket")
 
         # pass to the multiplexer, then down to the sockets
         self.mux.close_socket()
 
     def do_IAmRequest(self, apdu):
-        if _debug: DiscoverApplication._debug("do_IAmRequest %r", apdu)
+        if _debug:
+            DiscoverApplication._debug("do_IAmRequest %r", apdu)
         global who_is_to_do_list
 
         # pass it along to line up with active requests
         who_is_to_do_list.received_i_am(apdu)
 
+
 #
 #   WhoIsToDo
 #
 
+
 @bacpypes_debugging
 class WhoIsToDo(ToDoItem):
-
     def __init__(self, addr, lolimit, hilimit):
-        if _debug: WhoIsToDo._debug("__init__ %r %r %r", addr, lolimit, hilimit)
+        if _debug:
+            WhoIsToDo._debug("__init__ %r %r %r", addr, lolimit, hilimit)
         ToDoItem.__init__(self, _delay=3.0)
 
         # save the parameters
@@ -452,24 +489,28 @@ class WhoIsToDo(ToDoItem):
         who_is_to_do_list.append(self)
 
     def prepare(self):
-        if _debug: WhoIsToDo._debug("prepare(%r %r %r)", self.addr, self.lolimit, self.hilimit)
+        if _debug:
+            WhoIsToDo._debug("prepare(%r %r %r)", self.addr, self.lolimit, self.hilimit)
 
         # build a request
         self.request = WhoIsRequest(
             destination=self.addr,
             deviceInstanceRangeLowLimit=self.lolimit,
             deviceInstanceRangeHighLimit=self.hilimit,
-            )
-        if _debug: WhoIsToDo._debug("    - request: %r", self.request)
+        )
+        if _debug:
+            WhoIsToDo._debug("    - request: %r", self.request)
 
         # build an IOCB
         iocb = IOCB(self.request)
-        if _debug: WhoIsToDo._debug("    - iocb: %r", iocb)
+        if _debug:
+            WhoIsToDo._debug("    - iocb: %r", iocb)
 
         return iocb
 
     def complete(self, iocb):
-        if _debug: WhoIsToDo._debug("complete %r", iocb)
+        if _debug:
+            WhoIsToDo._debug("complete %r", iocb)
 
         # process the responses
         for apdu in self.i_am_responses:
@@ -480,18 +521,19 @@ class WhoIsToDo(ToDoItem):
                 print("{} @ {}".format(device_instance, apdu.pduSource))
 
             # update the snapshot database
+            snapshot.upsert(device_instance, "-", "address", str(apdu.pduSource))
             snapshot.upsert(
-                device_instance, '-', 'address',
-                str(apdu.pduSource),
-                )
-            snapshot.upsert(
-                device_instance, '-', 'maxAPDULengthAccepted',
+                device_instance,
+                "-",
+                "maxAPDULengthAccepted",
                 str(apdu.maxAPDULengthAccepted),
-                )
+            )
             snapshot.upsert(
-                device_instance, '-', 'segmentationSupported',
+                device_instance,
+                "-",
+                "segmentationSupported",
                 apdu.segmentationSupported,
-                )
+            )
 
             # read stuff
             ReadServicesSupported(device_instance)
@@ -500,84 +542,102 @@ class WhoIsToDo(ToDoItem):
         # pass along
         ToDoItem.complete(self, iocb)
 
+
 #
 #   WhoIsToDoList
 #
 
+
 @bacpypes_debugging
 class WhoIsToDoList(ToDoList):
-
     def received_i_am(self, apdu):
-        if _debug: WhoIsToDoList._debug("received_i_am %r", apdu)
+        if _debug:
+            WhoIsToDoList._debug("received_i_am %r", apdu)
 
         # line it up with an active item
         for item in self.active:
-            if _debug: WhoIsToDoList._debug("    - item: %r", item)
+            if _debug:
+                WhoIsToDoList._debug("    - item: %r", item)
 
             # check the source against the request
             if item.addr.addrType == Address.localBroadcastAddr:
                 if apdu.pduSource.addrType != Address.localStationAddr:
-                    if _debug: WhoIsToDoList._debug("    - not a local station")
+                    if _debug:
+                        WhoIsToDoList._debug("    - not a local station")
                     continue
 
             elif item.addr.addrType == Address.localStationAddr:
                 if apdu.pduSource != item.addr:
-                    if _debug: WhoIsToDoList._debug("    - not from station")
+                    if _debug:
+                        WhoIsToDoList._debug("    - not from station")
                     continue
 
             elif item.addr.addrType == Address.remoteBroadcastAddr:
                 if apdu.pduSource.addrType != Address.remoteStationAddr:
-                    if _debug: WhoIsToDoList._debug("    - not a remote station")
+                    if _debug:
+                        WhoIsToDoList._debug("    - not a remote station")
                     continue
                 if apdu.pduSource.addrNet != item.addr.addrNet:
-                    if _debug: WhoIsToDoList._debug("    - not from remote net")
+                    if _debug:
+                        WhoIsToDoList._debug("    - not from remote net")
                     continue
 
             elif item.addr.addrType == Address.remoteStationAddr:
                 if apdu.pduSource != item.addr:
-                    if _debug: WhoIsToDoList._debug("    - not correct remote station")
+                    if _debug:
+                        WhoIsToDoList._debug("    - not correct remote station")
                     continue
 
             # check the range restriction
             device_instance = apdu.iAmDeviceIdentifier[1]
             if (item.lolimit is not None) and (device_instance < item.lolimit):
-                if _debug: WhoIsToDoList._debug("    - lo limit")
+                if _debug:
+                    WhoIsToDoList._debug("    - lo limit")
                 continue
             if (item.hilimit is not None) and (device_instance > item.hilimit):
-                if _debug: WhoIsToDoList._debug("    - hi limit")
+                if _debug:
+                    WhoIsToDoList._debug("    - hi limit")
                 continue
 
             # debug in case something kicked it out
-            if _debug: WhoIsToDoList._debug("    - passed")
+            if _debug:
+                WhoIsToDoList._debug("    - passed")
 
             # save this response
             item.i_am_responses.append(apdu)
 
     def idle(self):
-        if _debug: WhoIsToDoList._debug("idle")
+        if _debug:
+            WhoIsToDoList._debug("idle")
+
 
 #
 #   ApplicationToDoList
 #
 
+
 @bacpypes_debugging
 class ApplicationToDoList(ToDoList):
-
     def __init__(self):
-        if _debug: ApplicationToDoList._debug("__init__")
+        if _debug:
+            ApplicationToDoList._debug("__init__")
         global this_application
 
         ToDoList.__init__(self, this_application)
+
 
 #
 #   ReadPropertyToDo
 #
 
+
 @bacpypes_debugging
 class ReadPropertyToDo(ToDoItem):
-
     def __init__(self, devid, objid, propid, index=None):
-        if _debug: ReadPropertyToDo._debug("__init__ %r %r %r index=%r", devid, objid, propid, index)
+        if _debug:
+            ReadPropertyToDo._debug(
+                "__init__ %r %r %r index=%r", devid, objid, propid, index
+            )
         ToDoItem.__init__(self)
 
         # save the parameters
@@ -590,33 +650,40 @@ class ReadPropertyToDo(ToDoItem):
         application_to_do_list.append(self)
 
     def prepare(self):
-        if _debug: ReadPropertyToDo._debug("prepare(%r %r %r)", self.devid, self.objid, self.propid)
+        if _debug:
+            ReadPropertyToDo._debug(
+                "prepare(%r %r %r)", self.devid, self.objid, self.propid
+            )
 
         # map the devid identifier to an address from the database
-        addr = snapshot.get_value(self.devid, '-', 'address')
+        addr = snapshot.get_value(self.devid, "-", "address")
         if not addr:
             raise ValueError("unknown device")
-        if _debug: ReadPropertyToDo._debug("    - addr: %r", addr)
+        if _debug:
+            ReadPropertyToDo._debug("    - addr: %r", addr)
 
         # build a request
         request = ReadPropertyRequest(
             destination=Address(addr),
             objectIdentifier=self.objid,
             propertyIdentifier=self.propid,
-            )
+        )
 
         if self.index is not None:
             request.propertyArrayIndex = self.index
-        if _debug: ReadPropertyToDo._debug("    - request: %r", request)
+        if _debug:
+            ReadPropertyToDo._debug("    - request: %r", request)
 
         # make an IOCB
         iocb = IOCB(request)
-        if _debug: ReadPropertyToDo._debug("    - iocb: %r", iocb)
+        if _debug:
+            ReadPropertyToDo._debug("    - iocb: %r", iocb)
 
         return iocb
 
     def complete(self, iocb):
-        if _debug: ReadPropertyToDo._debug("complete %r", iocb)
+        if _debug:
+            ReadPropertyToDo._debug("complete %r", iocb)
 
         # do something for error/reject/abort
         if iocb.ioError:
@@ -632,12 +699,14 @@ class ReadPropertyToDo(ToDoItem):
 
             # should be an ack
             if not isinstance(apdu, ReadPropertyACK):
-                if _debug: ReadPropertyToDo._debug("    - not an ack")
+                if _debug:
+                    ReadPropertyToDo._debug("    - not an ack")
                 return
 
             # find the datatype
             datatype = get_datatype(apdu.objectIdentifier[0], apdu.propertyIdentifier)
-            if _debug: ReadPropertyToDo._debug("    - datatype: %r", datatype)
+            if _debug:
+                ReadPropertyToDo._debug("    - datatype: %r", datatype)
             if not datatype:
                 raise TypeError("unknown datatype")
 
@@ -647,14 +716,16 @@ class ReadPropertyToDo(ToDoItem):
                     datatype = Unsigned
                 else:
                     datatype = datatype.subtype
-                if _debug: ReadPropertyToDo._debug("    - datatype: %r", datatype)
+                if _debug:
+                    ReadPropertyToDo._debug("    - datatype: %r", datatype)
 
             try:
                 value = apdu.propertyValue.cast_out(datatype)
-                if _debug: ReadPropertyToDo._debug("    - value: %r", value)
+                if _debug:
+                    ReadPropertyToDo._debug("    - value: %r", value)
 
                 # convert the value to a string
-                if hasattr(value, 'dict_contents'):
+                if hasattr(value, "dict_contents"):
                     dict_contents = value.dict_contents(as_class=OrderedDict)
                     str_value = json.dumps(dict_contents)
                 else:
@@ -671,62 +742,80 @@ class ReadPropertyToDo(ToDoItem):
                 str_prop += "[{}]".format(apdu.propertyArrayIndex)
 
             # save it in the snapshot
-            snapshot.upsert(self.devid, '{}:{}'.format(*apdu.objectIdentifier), str_prop, str_value)
+            snapshot.upsert(
+                self.devid, "{}:{}".format(*apdu.objectIdentifier), str_prop, str_value
+            )
 
             # do something more
             self.returned_value(value)
 
         # do something with nothing?
         else:
-            if _debug: ReadPropertyToDo._debug("    - ioError or ioResponse expected")
+            if _debug:
+                ReadPropertyToDo._debug("    - ioError or ioResponse expected")
 
     def returned_error(self, error):
-        if _debug: ReadPropertyToDo._debug("returned_error %r", error)
+        if _debug:
+            ReadPropertyToDo._debug("returned_error %r", error)
 
     def returned_value(self, value):
-        if _debug: ReadPropertyToDo._debug("returned_value %r", value)
+        if _debug:
+            ReadPropertyToDo._debug("returned_value %r", value)
+
 
 #
 #   ReadServicesSupported
 #
 
+
 @bacpypes_debugging
 class ReadServicesSupported(ReadPropertyToDo):
-
     def __init__(self, devid):
-        if _debug: ReadServicesSupported._debug("__init__ %r", devid)
-        ReadPropertyToDo.__init__(self, devid, ('device', devid), 'protocolServicesSupported')
+        if _debug:
+            ReadServicesSupported._debug("__init__ %r", devid)
+        ReadPropertyToDo.__init__(
+            self, devid, ("device", devid), "protocolServicesSupported"
+        )
 
     def returned_value(self, value):
-        if _debug: ReadServicesSupported._debug("returned_value %r", value)
+        if _debug:
+            ReadServicesSupported._debug("returned_value %r", value)
 
         # build a value
         services_supported = ServicesSupported(value)
-        print("{} supports rpm: {}".format(self.devid, services_supported['readPropertyMultiple']))
+        print(
+            "{} supports rpm: {}".format(
+                self.devid, services_supported["readPropertyMultiple"]
+            )
+        )
 
         # device profile
         devobj = device_profile[self.devid]
         devobj.protocolServicesSupported = services_supported
 
+
 #
 #   ReadObjectList
 #
 
+
 @bacpypes_debugging
 class ReadObjectList(ReadPropertyToDo):
-
     def __init__(self, devid):
-        if _debug: ReadObjectList._debug("__init__ %r", devid)
-        ReadPropertyToDo.__init__(self, devid, ('device', devid), 'objectList')
+        if _debug:
+            ReadObjectList._debug("__init__ %r", devid)
+        ReadPropertyToDo.__init__(self, devid, ("device", devid), "objectList")
 
     def returned_error(self, error):
-        if _debug: ReadObjectList._debug("returned_error %r", error)
+        if _debug:
+            ReadObjectList._debug("returned_error %r", error)
 
         # try reading the length of the list
         ReadObjectListLen(self.devid)
 
     def returned_value(self, value):
-        if _debug: ReadObjectList._debug("returned_value %r", value)
+        if _debug:
+            ReadObjectList._debug("returned_value %r", value)
 
         # update the device profile
         devobj = device_profile[self.devid]
@@ -736,15 +825,17 @@ class ReadObjectList(ReadPropertyToDo):
         for objid in value:
             ReadObjectProperties(self.devid, objid)
 
+
 #
 #   ReadPropertyMultipleToDo
 #
 
+
 @bacpypes_debugging
 class ReadPropertyMultipleToDo(ToDoItem):
-
     def __init__(self, devid, objid, proplist):
-        if _debug: ReadPropertyMultipleToDo._debug("__init__ %r %r %r", devid, objid, proplist)
+        if _debug:
+            ReadPropertyMultipleToDo._debug("__init__ %r %r %r", devid, objid, proplist)
         ToDoItem.__init__(self)
 
         # save the parameters
@@ -756,37 +847,44 @@ class ReadPropertyMultipleToDo(ToDoItem):
         application_to_do_list.append(self)
 
     def prepare(self):
-        if _debug: ReadPropertyMultipleToDo._debug("prepare(%r %r %r)", self.devid, self.objid, self.proplist)
+        if _debug:
+            ReadPropertyMultipleToDo._debug(
+                "prepare(%r %r %r)", self.devid, self.objid, self.proplist
+            )
 
         # map the devid identifier to an address from the database
-        addr = snapshot.get_value(self.devid, '-', 'address')
+        addr = snapshot.get_value(self.devid, "-", "address")
         if not addr:
             raise ValueError("unknown device")
-        if _debug: ReadPropertyMultipleToDo._debug("    - addr: %r", addr)
+        if _debug:
+            ReadPropertyMultipleToDo._debug("    - addr: %r", addr)
 
-        prop_reference_list = [PropertyReference(propertyIdentifier=propid) for propid in self.proplist]
+        prop_reference_list = [
+            PropertyReference(propertyIdentifier=propid) for propid in self.proplist
+        ]
 
         # build a read access specification
         read_access_spec = ReadAccessSpecification(
-            objectIdentifier=self.objid,
-            listOfPropertyReferences=prop_reference_list,
-            )
+            objectIdentifier=self.objid, listOfPropertyReferences=prop_reference_list
+        )
 
         # build the request
         request = ReadPropertyMultipleRequest(
-            destination=Address(addr),
-            listOfReadAccessSpecs=[read_access_spec],
-            )
-        if _debug: ReadPropertyMultipleToDo._debug("    - request: %r", request)
+            destination=Address(addr), listOfReadAccessSpecs=[read_access_spec]
+        )
+        if _debug:
+            ReadPropertyMultipleToDo._debug("    - request: %r", request)
 
         # make an IOCB
         iocb = IOCB(request)
-        if _debug: ReadPropertyMultipleToDo._debug("    - iocb: %r", iocb)
+        if _debug:
+            ReadPropertyMultipleToDo._debug("    - iocb: %r", iocb)
 
         return iocb
 
     def complete(self, iocb):
-        if _debug: ReadPropertyMultipleToDo._debug("complete %r", iocb)
+        if _debug:
+            ReadPropertyMultipleToDo._debug("complete %r", iocb)
 
         # do something for error/reject/abort
         if iocb.ioError:
@@ -802,22 +900,32 @@ class ReadPropertyMultipleToDo(ToDoItem):
 
             # should be an ack
             if not isinstance(apdu, ReadPropertyMultipleACK):
-                if _debug: ReadPropertyMultipleToDo._debug("    - not an ack")
+                if _debug:
+                    ReadPropertyMultipleToDo._debug("    - not an ack")
                 return
 
             # loop through the results
             for result in apdu.listOfReadAccessResults:
                 # here is the object identifier
                 objectIdentifier = result.objectIdentifier
-                if _debug: ReadPropertyMultipleToDo._debug("    - objectIdentifier: %r", objectIdentifier)
+                if _debug:
+                    ReadPropertyMultipleToDo._debug(
+                        "    - objectIdentifier: %r", objectIdentifier
+                    )
 
                 # now come the property values per object
                 for element in result.listOfResults:
                     # get the property and array index
                     propertyIdentifier = element.propertyIdentifier
-                    if _debug: ReadPropertyMultipleToDo._debug("    - propertyIdentifier: %r", propertyIdentifier)
+                    if _debug:
+                        ReadPropertyMultipleToDo._debug(
+                            "    - propertyIdentifier: %r", propertyIdentifier
+                        )
                     propertyArrayIndex = element.propertyArrayIndex
-                    if _debug: ReadPropertyMultipleToDo._debug("    - propertyArrayIndex: %r", propertyArrayIndex)
+                    if _debug:
+                        ReadPropertyMultipleToDo._debug(
+                            "    - propertyArrayIndex: %r", propertyArrayIndex
+                        )
 
                     # here is the read result
                     readResult = element.readResult
@@ -829,7 +937,11 @@ class ReadPropertyMultipleToDo(ToDoItem):
                     # check for an error
                     if readResult.propertyAccessError is not None:
                         if interactive:
-                            print("{} ! {}".format(property_label, readResult.propertyAccessError))
+                            print(
+                                "{} ! {}".format(
+                                    property_label, readResult.propertyAccessError
+                                )
+                            )
 
                     else:
                         # here is the value
@@ -837,25 +949,38 @@ class ReadPropertyMultipleToDo(ToDoItem):
 
                         # find the datatype
                         datatype = get_datatype(objectIdentifier[0], propertyIdentifier)
-                        if _debug: ReadPropertyMultipleToDo._debug("    - datatype: %r", datatype)
+                        if _debug:
+                            ReadPropertyMultipleToDo._debug(
+                                "    - datatype: %r", datatype
+                            )
                         if not datatype:
-                            str_value = '?'
+                            str_value = "?"
                         else:
                             # special case for array parts, others are managed by cast_out
-                            if issubclass(datatype, Array) and (propertyArrayIndex is not None):
+                            if issubclass(datatype, Array) and (
+                                propertyArrayIndex is not None
+                            ):
                                 if propertyArrayIndex == 0:
                                     datatype = Unsigned
                                 else:
                                     datatype = datatype.subtype
-                                if _debug: ReadPropertyMultipleToDo._debug("    - datatype: %r", datatype)
+                                if _debug:
+                                    ReadPropertyMultipleToDo._debug(
+                                        "    - datatype: %r", datatype
+                                    )
 
                             try:
                                 value = propertyValue.cast_out(datatype)
-                                if _debug: ReadPropertyMultipleToDo._debug("    - value: %r", value)
+                                if _debug:
+                                    ReadPropertyMultipleToDo._debug(
+                                        "    - value: %r", value
+                                    )
 
                                 # convert the value to a string
-                                if hasattr(value, 'dict_contents'):
-                                    dict_contents = value.dict_contents(as_class=OrderedDict)
+                                if hasattr(value, "dict_contents"):
+                                    dict_contents = value.dict_contents(
+                                        as_class=OrderedDict
+                                    )
                                     str_value = json.dumps(dict_contents)
                                 else:
                                     str_value = str(value)
@@ -866,59 +991,75 @@ class ReadPropertyMultipleToDo(ToDoItem):
                             print("{}: {}".format(propertyIdentifier, str_value))
 
                         # save it in the snapshot
-                        snapshot.upsert(self.devid, '{}:{}'.format(*objectIdentifier), str(propertyIdentifier), str_value)
+                        snapshot.upsert(
+                            self.devid,
+                            "{}:{}".format(*objectIdentifier),
+                            str(propertyIdentifier),
+                            str_value,
+                        )
 
         # do something with nothing?
         else:
-            if _debug: ReadPropertyMultipleToDo._debug("    - ioError or ioResponse expected")
+            if _debug:
+                ReadPropertyMultipleToDo._debug("    - ioError or ioResponse expected")
 
     def returned_error(self, error):
-        if _debug: ReadPropertyMultipleToDo._debug("returned_error %r", error)
+        if _debug:
+            ReadPropertyMultipleToDo._debug("returned_error %r", error)
 
     def returned_value(self, value):
-        if _debug: ReadPropertyMultipleToDo._debug("returned_value %r", value)
+        if _debug:
+            ReadPropertyMultipleToDo._debug("returned_value %r", value)
+
 
 #
 #   ReadObjectListLen
 #
 
+
 @bacpypes_debugging
 class ReadObjectListLen(ReadPropertyToDo):
-
     def __init__(self, devid):
-        if _debug: ReadObjectListLen._debug("__init__ %r", devid)
-        ReadPropertyToDo.__init__(self, devid, ('device', devid), 'objectList', 0)
+        if _debug:
+            ReadObjectListLen._debug("__init__ %r", devid)
+        ReadPropertyToDo.__init__(self, devid, ("device", devid), "objectList", 0)
 
     def returned_error(self, error):
-        if _debug: ReadObjectListLen._debug("returned_error %r", error)
+        if _debug:
+            ReadObjectListLen._debug("returned_error %r", error)
 
     def returned_value(self, value):
-        if _debug: ReadObjectListLen._debug("returned_value %r", value)
+        if _debug:
+            ReadObjectListLen._debug("returned_value %r", value)
 
         # start with an empty list
         devobj = device_profile[self.devid]
         devobj.objectList = ArrayOf(ObjectIdentifier)()
 
         # read each of the individual items
-        for i in range(1, value+1):
+        for i in range(1, value + 1):
             ReadObjectListElement(self.devid, i)
+
 
 #
 #   ReadObjectListElement
 #
 
+
 @bacpypes_debugging
 class ReadObjectListElement(ReadPropertyToDo):
-
     def __init__(self, devid, indx):
-        if _debug: ReadObjectListElement._debug("__init__ %r", devid, indx)
-        ReadPropertyToDo.__init__(self, devid, ('device', devid), 'objectList', indx)
+        if _debug:
+            ReadObjectListElement._debug("__init__ %r", devid, indx)
+        ReadPropertyToDo.__init__(self, devid, ("device", devid), "objectList", indx)
 
     def returned_error(self, error):
-        if _debug: ReadObjectListElement._debug("returned_error %r", error)
+        if _debug:
+            ReadObjectListElement._debug("returned_error %r", error)
 
     def returned_value(self, value):
-        if _debug: ReadObjectListElement._debug("returned_value %r", value)
+        if _debug:
+            ReadObjectListElement._debug("returned_value %r", value)
 
         # update the list
         devobj = device_profile[self.devid]
@@ -932,18 +1073,21 @@ class ReadObjectListElement(ReadPropertyToDo):
 #   ReadObjectProperties
 #
 
+
 @bacpypes_debugging
 def ReadObjectProperties(devid, objid):
-    if _debug: ReadObjectProperties._debug("ReadObjectProperties %r %r", devid, objid)
+    if _debug:
+        ReadObjectProperties._debug("ReadObjectProperties %r %r", devid, objid)
 
     # get the profile, it contains the protocol services supported
     devobj = device_profile[devid]
-    supports_rpm = devobj.protocolServicesSupported['readPropertyMultiple']
-    if _debug: ReadObjectProperties._debug("    - supports rpm: %r", supports_rpm)
+    supports_rpm = devobj.protocolServicesSupported["readPropertyMultiple"]
+    if _debug:
+        ReadObjectProperties._debug("    - supports rpm: %r", supports_rpm)
 
     # read all the properties at once if it's an option
     if supports_rpm:
-        ReadPropertyMultipleToDo(devid, objid, ['all'])
+        ReadPropertyMultipleToDo(devid, objid, ["all"])
     else:
         ReadObjectPropertyList(devid, objid)
 
@@ -952,56 +1096,65 @@ def ReadObjectProperties(devid, objid):
 #   ReadObjectPropertyList
 #
 
+
 @bacpypes_debugging
 class ReadObjectPropertyList(ReadPropertyToDo):
-
     def __init__(self, devid, objid):
-        if _debug: ReadObjectPropertyList._debug("__init__ %r", devid)
-        ReadPropertyToDo.__init__(self, devid, objid, 'propertyList')
+        if _debug:
+            ReadObjectPropertyList._debug("__init__ %r", devid)
+        ReadPropertyToDo.__init__(self, devid, objid, "propertyList")
 
     def returned_error(self, error):
-        if _debug: ReadObjectPropertyList._debug("returned_error %r", error)
+        if _debug:
+            ReadObjectPropertyList._debug("returned_error %r", error)
 
         # get the class
         object_class = get_object_class(self.objid[0])
-        if _debug: ReadObjectPropertyList._debug("    - object_class: %r", object_class)
+        if _debug:
+            ReadObjectPropertyList._debug("    - object_class: %r", object_class)
 
         # get a list of properties, including optional ones
         object_properties = list(object_class._properties.keys())
-        if _debug: ReadObjectPropertyList._debug("    - object_properties: %r", object_properties)
+        if _debug:
+            ReadObjectPropertyList._debug(
+                "    - object_properties: %r", object_properties
+            )
 
         # dont bother reading the property list, it already failed
-        if 'propertyList' in object_properties:
-            object_properties.remove('propertyList')
+        if "propertyList" in object_properties:
+            object_properties.remove("propertyList")
 
         # try to read all the properties
         for propid in object_properties:
             ReadPropertyToDo(self.devid, self.objid, propid)
 
     def returned_value(self, value):
-        if _debug: ReadObjectPropertyList._debug("returned_value %r", value)
+        if _debug:
+            ReadObjectPropertyList._debug("returned_value %r", value)
 
         # add the other properties that are always present but not
         # returned in property list
-        value.extend(('objectName', 'objectType', 'objectIdentifier'))
+        value.extend(("objectName", "objectType", "objectIdentifier"))
 
         # read each of the individual properties
         for propid in value:
             ReadPropertyToDo(self.devid, self.objid, propid)
 
+
 #
 #   DiscoverConsoleCmd
 #
 
+
 @bacpypes_debugging
 class DiscoverConsoleCmd(ConsoleCmd):
-
     def do_sleep(self, args):
         """
         sleep <secs>
         """
         args = args.split()
-        if _debug: DiscoverConsoleCmd._debug("do_sleep %r", args)
+        if _debug:
+            DiscoverConsoleCmd._debug("do_sleep %r", args)
 
         time.sleep(float(args[0]))
 
@@ -1013,7 +1166,8 @@ class DiscoverConsoleCmd(ConsoleCmd):
         the message is locally broadcast.
         """
         args = args.split()
-        if _debug: DiscoverConsoleCmd._debug("do_wirtn %r", args)
+        if _debug:
+            DiscoverConsoleCmd._debug("do_wirtn %r", args)
 
         # build a request
         try:
@@ -1025,7 +1179,7 @@ class DiscoverConsoleCmd(ConsoleCmd):
                 request.wirtnNetwork = int(args[0])
             else:
                 request.pduDestination = Address(args[0])
-                if (len(args) > 1):
+                if len(args) > 1:
                     request.wirtnNetwork = int(args[1])
         except:
             print("invalid arguments")
@@ -1045,7 +1199,8 @@ class DiscoverConsoleCmd(ConsoleCmd):
         will return an acknowledgement with its routing table configuration.
         """
         args = args.split()
-        if _debug: DiscoverConsoleCmd._debug("do_irt %r", args)
+        if _debug:
+            DiscoverConsoleCmd._debug("do_irt %r", args)
 
         # build a request
         try:
@@ -1066,12 +1221,13 @@ class DiscoverConsoleCmd(ConsoleCmd):
         the message is locally broadcast.
         """
         args = args.split()
-        if _debug: DiscoverConsoleCmd._debug("do_winn %r", args)
+        if _debug:
+            DiscoverConsoleCmd._debug("do_winn %r", args)
 
         # build a request
         try:
             request = WhatIsNetworkNumber()
-            if (len(args) > 0):
+            if len(args) > 0:
                 request.pduDestination = Address(args[0])
             else:
                 request.pduDestination = LocalBroadcast()
@@ -1093,7 +1249,8 @@ class DiscoverConsoleCmd(ConsoleCmd):
         be returned.
         """
         args = args.split()
-        if _debug: DiscoverConsoleCmd._debug("do_whois %r", args)
+        if _debug:
+            DiscoverConsoleCmd._debug("do_whois %r", args)
 
         try:
             # parse parameters
@@ -1110,7 +1267,8 @@ class DiscoverConsoleCmd(ConsoleCmd):
 
             # make an item
             item = WhoIsToDo(addr, lolimit, hilimit)
-            if _debug: DiscoverConsoleCmd._debug("    - item: %r", item)
+            if _debug:
+                DiscoverConsoleCmd._debug("    - item: %r", item)
 
         except Exception as err:
             DiscoverConsoleCmd._exception("exception: %r", err)
@@ -1123,12 +1281,13 @@ class DiscoverConsoleCmd(ConsoleCmd):
         locally broadcast.
         """
         args = args.split()
-        if _debug: DiscoverConsoleCmd._debug("do_iam %r", args)
+        if _debug:
+            DiscoverConsoleCmd._debug("do_iam %r", args)
 
         try:
             # build a request
             request = IAmRequest()
-            if (len(args) == 1):
+            if len(args) == 1:
                 request.pduDestination = Address(args[0])
             else:
                 request.pduDestination = GlobalBroadcast()
@@ -1138,11 +1297,13 @@ class DiscoverConsoleCmd(ConsoleCmd):
             request.maxAPDULengthAccepted = this_device.maxApduLengthAccepted
             request.segmentationSupported = this_device.segmentationSupported
             request.vendorID = this_device.vendorIdentifier
-            if _debug: DiscoverConsoleCmd._debug("    - request: %r", request)
+            if _debug:
+                DiscoverConsoleCmd._debug("    - request: %r", request)
 
             # make an IOCB
             iocb = IOCB(request)
-            if _debug: DiscoverConsoleCmd._debug("    - iocb: %r", iocb)
+            if _debug:
+                DiscoverConsoleCmd._debug("    - iocb: %r", iocb)
 
             # give it to the application
             this_application.request_io(iocb)
@@ -1158,7 +1319,8 @@ class DiscoverConsoleCmd(ConsoleCmd):
         identifier.
         """
         args = args.split()
-        if _debug: DiscoverConsoleCmd._debug("do_rp %r", args)
+        if _debug:
+            DiscoverConsoleCmd._debug("do_rp %r", args)
         global application_to_do_list
 
         try:
@@ -1190,35 +1352,40 @@ class DiscoverConsoleCmd(ConsoleCmd):
         device identifier.
         """
         args = args.split()
-        if _debug: DiscoverConsoleCmd._debug("do_rpm %r", args)
+        if _debug:
+            DiscoverConsoleCmd._debug("do_rpm %r", args)
 
         try:
             i = 0
             devid = int(args[i])
-            if _debug: DiscoverConsoleCmd._debug("    - devid: %r", devid)
+            if _debug:
+                DiscoverConsoleCmd._debug("    - devid: %r", devid)
             i += 1
 
             # map the devid identifier to an address from the database
-            addr = snapshot.get_value(devid, '-', 'address')
+            addr = snapshot.get_value(devid, "-", "address")
             if not addr:
                 raise ValueError("unknown device")
-            if _debug: DiscoverConsoleCmd._debug("    - addr: %r", addr)
+            if _debug:
+                DiscoverConsoleCmd._debug("    - addr: %r", addr)
 
             read_access_spec_list = []
             while i < len(args):
                 obj_id = ObjectIdentifier(args[i]).value
-                if _debug: DiscoverConsoleCmd._debug("    - obj_id: %r", obj_id)
+                if _debug:
+                    DiscoverConsoleCmd._debug("    - obj_id: %r", obj_id)
                 i += 1
 
                 prop_reference_list = []
                 while i < len(args):
                     prop_id = args[i]
-                    if _debug: DiscoverConsoleCmd._debug("    - prop_id: %r", prop_id)
+                    if _debug:
+                        DiscoverConsoleCmd._debug("    - prop_id: %r", prop_id)
                     if prop_id not in PropertyIdentifier.enumerations:
                         break
 
                     i += 1
-                    if prop_id in ('all', 'required', 'optional'):
+                    if prop_id in ("all", "required", "optional"):
                         pass
                     else:
                         datatype = get_datatype(obj_id[0], prop_id)
@@ -1226,9 +1393,7 @@ class DiscoverConsoleCmd(ConsoleCmd):
                             raise ValueError("invalid property for object type")
 
                     # build a property reference
-                    prop_reference = PropertyReference(
-                        propertyIdentifier=prop_id,
-                        )
+                    prop_reference = PropertyReference(propertyIdentifier=prop_id)
 
                     # check for an array index
                     if (i < len(args)) and args[i].isdigit():
@@ -1246,7 +1411,7 @@ class DiscoverConsoleCmd(ConsoleCmd):
                 read_access_spec = ReadAccessSpecification(
                     objectIdentifier=obj_id,
                     listOfPropertyReferences=prop_reference_list,
-                    )
+                )
 
                 # add it to the list
                 read_access_spec_list.append(read_access_spec)
@@ -1257,14 +1422,16 @@ class DiscoverConsoleCmd(ConsoleCmd):
 
             # build the request
             request = ReadPropertyMultipleRequest(
-                listOfReadAccessSpecs=read_access_spec_list,
-                )
+                listOfReadAccessSpecs=read_access_spec_list
+            )
             request.pduDestination = Address(addr)
-            if _debug: DiscoverConsoleCmd._debug("    - request: %r", request)
+            if _debug:
+                DiscoverConsoleCmd._debug("    - request: %r", request)
 
             # make an IOCB
             iocb = IOCB(request)
-            if _debug: DiscoverConsoleCmd._debug("    - iocb: %r", iocb)
+            if _debug:
+                DiscoverConsoleCmd._debug("    - iocb: %r", iocb)
 
             # give it to the application
             this_application.request_io(iocb)
@@ -1278,22 +1445,32 @@ class DiscoverConsoleCmd(ConsoleCmd):
 
                 # should be an ack
                 if not isinstance(apdu, ReadPropertyMultipleACK):
-                    if _debug: DiscoverConsoleCmd._debug("    - not an ack")
+                    if _debug:
+                        DiscoverConsoleCmd._debug("    - not an ack")
                     return
 
                 # loop through the results
                 for result in apdu.listOfReadAccessResults:
                     # here is the object identifier
                     objectIdentifier = result.objectIdentifier
-                    if _debug: DiscoverConsoleCmd._debug("    - objectIdentifier: %r", objectIdentifier)
+                    if _debug:
+                        DiscoverConsoleCmd._debug(
+                            "    - objectIdentifier: %r", objectIdentifier
+                        )
 
                     # now come the property values per object
                     for element in result.listOfResults:
                         # get the property and array index
                         propertyIdentifier = element.propertyIdentifier
-                        if _debug: DiscoverConsoleCmd._debug("    - propertyIdentifier: %r", propertyIdentifier)
+                        if _debug:
+                            DiscoverConsoleCmd._debug(
+                                "    - propertyIdentifier: %r", propertyIdentifier
+                            )
                         propertyArrayIndex = element.propertyArrayIndex
-                        if _debug: DiscoverConsoleCmd._debug("    - propertyArrayIndex: %r", propertyArrayIndex)
+                        if _debug:
+                            DiscoverConsoleCmd._debug(
+                                "    - propertyArrayIndex: %r", propertyArrayIndex
+                            )
 
                         # here is the read result
                         readResult = element.readResult
@@ -1305,33 +1482,52 @@ class DiscoverConsoleCmd(ConsoleCmd):
                         # check for an error
                         if readResult.propertyAccessError is not None:
                             if interactive:
-                                print("{} ! {}".format(property_label, readResult.propertyAccessError))
+                                print(
+                                    "{} ! {}".format(
+                                        property_label, readResult.propertyAccessError
+                                    )
+                                )
 
                         else:
                             # here is the value
                             propertyValue = readResult.propertyValue
 
                             # find the datatype
-                            datatype = get_datatype(objectIdentifier[0], propertyIdentifier)
-                            if _debug: DiscoverConsoleCmd._debug("    - datatype: %r", datatype)
+                            datatype = get_datatype(
+                                objectIdentifier[0], propertyIdentifier
+                            )
+                            if _debug:
+                                DiscoverConsoleCmd._debug(
+                                    "    - datatype: %r", datatype
+                                )
                             if not datatype:
-                                str_value = '?'
+                                str_value = "?"
                             else:
                                 # special case for array parts, others are managed by cast_out
-                                if issubclass(datatype, Array) and (propertyArrayIndex is not None):
+                                if issubclass(datatype, Array) and (
+                                    propertyArrayIndex is not None
+                                ):
                                     if propertyArrayIndex == 0:
                                         datatype = Unsigned
                                     else:
                                         datatype = datatype.subtype
-                                    if _debug: DiscoverConsoleCmd._debug("    - datatype: %r", datatype)
+                                    if _debug:
+                                        DiscoverConsoleCmd._debug(
+                                            "    - datatype: %r", datatype
+                                        )
 
                                 try:
                                     value = propertyValue.cast_out(datatype)
-                                    if _debug: DiscoverConsoleCmd._debug("    - value: %r", value)
+                                    if _debug:
+                                        DiscoverConsoleCmd._debug(
+                                            "    - value: %r", value
+                                        )
 
                                     # convert the value to a string
-                                    if hasattr(value, 'dict_contents'):
-                                        dict_contents = value.dict_contents(as_class=OrderedDict)
+                                    if hasattr(value, "dict_contents"):
+                                        dict_contents = value.dict_contents(
+                                            as_class=OrderedDict
+                                        )
                                         str_value = json.dumps(dict_contents)
                                     else:
                                         str_value = str(value)
@@ -1342,7 +1538,12 @@ class DiscoverConsoleCmd(ConsoleCmd):
                                 print("{}: {}".format(property_label, str_value))
 
                             # save it in the snapshot
-                            snapshot.upsert(devid, '{}:{}'.format(*objectIdentifier), str(propertyIdentifier), str_value)
+                            snapshot.upsert(
+                                devid,
+                                "{}:{}".format(*objectIdentifier),
+                                str(propertyIdentifier),
+                                str_value,
+                            )
 
             # do something for error/reject/abort
             if iocb.ioError:
@@ -1352,49 +1553,48 @@ class DiscoverConsoleCmd(ConsoleCmd):
         except Exception as error:
             DiscoverConsoleCmd._exception("exception: %r", error)
 
+
 #
 #   __main__
 #
 
+
 def main():
-    global args, this_device, this_application, snapshot, \
-        who_is_to_do_list, application_to_do_list
+    global args, this_device, this_application, snapshot, who_is_to_do_list, application_to_do_list
 
     # parse the command line arguments
     parser = ConfigArgumentParser(description=__doc__)
 
     # input file for exiting configuration
-    parser.add_argument("infile",
-        default="-",
-        help="input file",
-        )
+    parser.add_argument("infile", default="-", help="input file")
 
     # output file for discovered configuration
-    parser.add_argument("outfile", nargs='?',
-        default='-unspecified-',
-        help="output file",
-        )
+    parser.add_argument(
+        "outfile", nargs="?", default="-unspecified-", help="output file"
+    )
 
     args = parser.parse_args()
 
-    if _debug: _log.debug("initialization")
-    if _debug: _log.debug("    - args: %r", args)
+    if _debug:
+        _log.debug("initialization")
+    if _debug:
+        _log.debug("    - args: %r", args)
 
     # make a device object
     this_device = LocalDeviceObject(ini=args.ini)
-    if _debug: _log.debug("    - this_device: %r", this_device)
+    if _debug:
+        _log.debug("    - this_device: %r", this_device)
 
     # make a simple application
-    this_application = DiscoverApplication(
-        this_device, args.ini.address,
-        )
-    if _debug: _log.debug("    - this_application: %r", this_application)
+    this_application = DiscoverApplication(this_device, args.ini.address)
+    if _debug:
+        _log.debug("    - this_application: %r", this_application)
 
     # make a snapshot 'database'
     snapshot = Snapshot()
 
     # read in an existing snapshot
-    if args.infile != '-':
+    if args.infile != "-":
         snapshot.read_file(args.infile)
 
     # special lists
@@ -1416,10 +1616,11 @@ def main():
     _log.debug("fini")
 
     # write out the snapshot, outfile defaults to infile if not specified
-    if args.outfile == '-unspecified-':
+    if args.outfile == "-unspecified-":
         args.outfile = args.infile
-    if args.outfile != '-':
+    if args.outfile != "-":
         snapshot.write_file(args.outfile)
+
 
 if __name__ == "__main__":
     main()
